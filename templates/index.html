@@ -98,7 +98,6 @@
                 <div class="bg-black/50 rounded-xl border border-agrodark-700 p-2 shadow-inner aspect-[4/3] flex items-center justify-center overflow-hidden relative group">
                     <img id="imagePreview" src="" class="max-w-full max-h-full object-contain rounded-lg shadow-2xl transition-transform duration-500 group-hover:scale-105">
                 </div>
-                <img id="heatmap-image" class="hidden mt-4 w-full rounded-lg border border-agrodark-700">
             </div>
 
             <button onclick="analyzeLeaf()" class="w-full bg-gradient-to-r from-agroemerald-600 to-agroemerald-500 hover:from-agroemerald-500 hover:to-agroemerald-400 text-white font-semibold py-3.5 px-4 rounded-xl shadow-[0_0_15px_rgba(16,185,129,0.3)] hover:shadow-[0_0_25px_rgba(16,185,129,0.5)] transition-all flex justify-center items-center gap-2 mb-4 z-10">
@@ -307,10 +306,6 @@
                     document.getElementById('result-remedy').innerHTML = marked.parse(data.remedy);
                     
                     const badge = document.getElementById('result-status-badge');
-                if(data.heatmap){
-                    document.getElementById("heatmap-image").src = data.heatmap;
-                    document.getElementById("heatmap-image").classList.remove("hidden");
-                    }
                     if (data.is_healthy) {
                         badge.innerText = 'HEALTHY';
                         badge.className = 'px-3 py-1 rounded-full text-xs font-bold border tracking-wide shadow-sm text-agroemerald-400 bg-agroemerald-400/10 border-agroemerald-400/30';
