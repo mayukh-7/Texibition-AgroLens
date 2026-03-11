@@ -1,0 +1,7 @@
+flask
+transformers
+pillow
+python-dotenv
+langchain-google-genai>=1.0.8 
+langchain-core
+torch
