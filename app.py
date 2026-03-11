@@ -9,13 +9,6 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.messages import HumanMessage, AIMessage
 
-from langchain_core.output_parsers import StrOutputParser
-import cv2
-import numpy as np
-from transformers import AutoImageProcessor, AutoModelForImageClassification
-from pytorch_grad_cam import GradCAM
-from pytorch_grad_cam.utils.image import show_cam_on_image
-
 load_dotenv()
 
 app = Flask(__name__)
@@ -24,74 +17,6 @@ app.secret_key = "super_secret_agrolens_key"
 print("Loading Vision Model...")
 viz_pipe = pipeline("image-classification", model="wambugu71/crop_leaf_diseases_vit")
 print("Vision Model Loaded.")
-
-# Heatmap Model
-model_name = "wambugu71/crop_leaf_diseases_vit"
-processor = AutoImageProcessor.from_pretrained(model_name)
-heatmap_model = AutoModelForImageClassification.from_pretrained(model_name)
-heatmap_model.eval()
-
-def load_heatmap_model():
-
-    model_name = "wambugu71/crop_leaf_diseases_vit"
-
-    processor = AutoImageProcessor.from_pretrained(model_name)
-
-    model = AutoModelForImageClassification.from_pretrained(model_name)
-
-    model.eval()
-
-    return processor, model 
-processor, model = load_heatmap_model()
-
-import torch.nn as nn
-
-class HuggingFaceWrapper(nn.Module):
-    def __init__(self, model):
-        super().__init__()
-        self.model = model
-
-    def forward(self, x):
-        outputs = self.model(pixel_values=x)
-        return outputs.logits
-    
-def reshape_transform(tensor):
-    result = tensor[:, 1:, :]
-    height = width = int(result.shape[1] ** 0.5)
-    result = result.reshape(result.size(0), height, width, result.size(2))
-    result = result.permute(0, 3, 1, 2)
-    return result
-
-def generate_heatmap(image):
-
-    inputs = processor(images=image, return_tensors="pt")
-
-    wrapped_model = HuggingFaceWrapper(heatmap_model)
-
-    target_layers = [wrapped_model.model.vit.encoder.layer[-1].output]
-
-    cam = GradCAM(
-    model=wrapped_model,
-    target_layers=target_layers,
-    reshape_transform=reshape_transform
-    )
-
-    grayscale_cam = cam(input_tensor=inputs["pixel_values"])[0]
-
-    img = np.array(image.resize((224,224)))
-
-    img_float = img.astype(np.float32) / 255
-
-    visualization = show_cam_on_image(img_float, grayscale_cam, use_rgb=True)
-
-    os.makedirs("static/heatmaps", exist_ok=True)
-
-    output_path = "static/heatmaps/heatmap.jpg"
-
-    cv2.imwrite(output_path, visualization)
-
-    return "/" + output_path
-
 
 def get_llm():
     api_key = os.getenv("GOOGLE_API_KEY")
@@ -170,7 +95,6 @@ def analyze():
     top = results[0]
     final_crop, final_disease = parse_prediction(top['label'])
     confidence = top['score']
-    heatmap_path = generate_heatmap(image)
     
     llm = get_llm()
     if not llm:
@@ -188,7 +112,6 @@ def analyze():
         "disease": final_disease,
         "confidence": confidence,
         "remedy": remedy,
-        "heatmap": heatmap_path,
         "is_healthy": "Healthy" in final_disease
     })
 
